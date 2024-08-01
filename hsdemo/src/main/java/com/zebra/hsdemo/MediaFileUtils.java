@@ -1,7 +1,10 @@
 package com.zebra.hsdemo;
 
+import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -65,15 +68,30 @@ public class MediaFileUtils {
     }
 
     private static Uri insertFileIntoMediaStore(Context context, File file) {
+        ContentResolver contentResolver = context.getContentResolver();
+        Uri externalContentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+
+        // Check if a file with the same name already exists and delete it
+        String selection = MediaStore.MediaColumns.DISPLAY_NAME + "=?";
+        String[] selectionArgs = new String[]{file.getName()};
+        Cursor cursor = contentResolver.query(externalContentUri, null, selection, selectionArgs, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            int id = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID));
+            Uri existingFileUri = ContentUris.withAppendedId(externalContentUri, id);
+            contentResolver.delete(existingFileUri, null, null);
+            cursor.close();
+        }
+
+        // Insert the new file
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, file.getName());
         values.put(MediaStore.MediaColumns.MIME_TYPE, "audio/wav");
         values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/MyMediaFiles");
 
-        Uri externalContentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        Uri fileUri = context.getContentResolver().insert(externalContentUri, values);
+        Uri fileUri = contentResolver.insert(externalContentUri, values);
 
-        try (OutputStream out = context.getContentResolver().openOutputStream(fileUri)) {
+        try (OutputStream out = contentResolver.openOutputStream(fileUri)) {
             FileInputStream in = new FileInputStream(file);
             byte[] buffer = new byte[1024];
             int length;
@@ -86,6 +104,7 @@ public class MediaFileUtils {
 
         return fileUri;
     }
+
 
     public static byte[] applyGain(byte[] buffer, int read, float gain) {
         for (int i = 0; i < read; i += 2) {

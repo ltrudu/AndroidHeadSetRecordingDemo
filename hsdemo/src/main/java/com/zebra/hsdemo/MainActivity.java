@@ -55,9 +55,9 @@ public class MainActivity extends AppCompatActivity {
     int bufSize = 0;
     boolean isRecording = false;
     float recordingGain = 1.0f;
-    float replayGain = 1.0f;
+    float replayGain = 15.0f;
 
-    public static final int sampleRate = 8000;
+    public static final int sampleRate = 44000;
     public static final int channelInConfig = AudioFormat.CHANNEL_IN_MONO;
     public static final int channelOutConfig = AudioFormat.CHANNEL_OUT_MONO;
     public static final int channelNumber = 1;
@@ -162,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
         // Request audio focus
         audioManager.requestAudioFocus(focusChange -> {
             // Handle focus change
-        }, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
+        }, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
 
         registerStateReceiver();
 
@@ -325,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String getFilename()
     {
-        File myCacheFile = new File(getCacheDir(), "recorded_audio.pcm");
+        File myCacheFile = new File(getCacheDir(), "hsdemo_audio.pcm");
         return myCacheFile.getPath();
     }
 
