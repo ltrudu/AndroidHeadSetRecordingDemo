@@ -21,7 +21,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -51,13 +53,13 @@ public class MainActivity extends AppCompatActivity {
     AudioManager playAudioManager = null;
     AudioRecord recorder = null;
     Thread recordingThread = null;
-    MediaPlayer mp = null;
     int bufSize = 0;
     boolean isRecording = false;
     float recordingGain = 1.0f;
-    float replayGain = 15.0f;
+    float replayGain = 10.0f;
 
-    public static final int sampleRate = 44000;
+    final static int[] sampleRatevalues = {8000, 12000, 16000, 22000, 32000, 44000};
+    public static int sampleRate = sampleRatevalues[0];
     public static final int channelInConfig = AudioFormat.CHANNEL_IN_MONO;
     public static final int channelOutConfig = AudioFormat.CHANNEL_OUT_MONO;
     public static final int channelNumber = 1;
@@ -239,6 +241,31 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
+            }
+        });
+
+        SeekBar sbSampleRate = findViewById(R.id.sbSampleRate);
+        TextView tvSampleRate = findViewById(R.id.tvSampleRate);
+        tvSampleRate.setText(String.format("%05d", sampleRatevalues[0]) + " Hz");
+        sbSampleRate.setProgress(0);
+        sbSampleRate.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                sampleRate = sampleRatevalues[progress];
+                String formattedValue = String.format("%05d", sampleRate);
+                tvSampleRate.setText(String.valueOf(formattedValue) + " Hz");
+                // Do something with the selected value
+                Log.d("SeekBar", "Selected value: " + sampleRate);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // Optional: handle start of touch
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // Optional: handle stop of touch
             }
         });
     }
