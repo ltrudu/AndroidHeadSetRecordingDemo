@@ -7,6 +7,9 @@ The demo implements replay with media player and audio track.
 You can select the recording sample rate, the recording gain (not recommended) and/or the replay gain (recommended).
 
 
+![screenshot-1722588387859](https://github.com/user-attachments/assets/f6debfd2-9484-403e-8826-56107094bfeb)
+
+
 # END USER LICENSE AGREEMENT (UNRESTRICTED SOFTWARE)
 
 
