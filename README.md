@@ -1,5 +1,11 @@
 *Please be aware that this library / application / sample is provided as a community project without any guarantee of support*
-=========================================================
+
+Head Set Recording Demo is a sample that shows how to implement SCO Bluetooth Headset connection for recording and playing audio on Android.
+
+The demo implements replay with media player and audio track.
+
+You can select the recording sample rate, the recording gain (not recommended) and/or the replay gain (recommended).
+
 
 # END USER LICENSE AGREEMENT (UNRESTRICTED SOFTWARE)
 
