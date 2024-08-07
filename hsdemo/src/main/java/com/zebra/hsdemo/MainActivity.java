@@ -49,8 +49,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean targetBt = false;
 
 
-    AudioManager recAudioManager = null;
-    AudioManager playAudioManager = null;
     AudioRecord recorder = null;
     Thread recordingThread = null;
     int bufSize = 0;
@@ -291,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startBluetoothSCOAudio(boolean state) {
-        AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         targetBt = state;
         if (state != isBluetoothConnected) {
             if(state) {
@@ -313,13 +310,11 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("MissingPermission")
     private void startRecording(){
-        recAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        // Setting Mode is not mandatory, but based on the usecase (VoIP)
-        //recAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-        if (isHeadsetConnected()) {
+         if (isHeadsetConnected()) {
             startBluetoothSCOAudio(true);
         } // To check if BT Headset is available to connect SCO and record via BT
 
+         audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
 
         bufSize = AudioRecord.getMinBufferSize(sampleRate, channelInConfig, audioFormat);
         try {
@@ -408,13 +403,14 @@ public class MainActivity extends AppCompatActivity {
             recorder = null;
             recordingThread = null;
         }
-        if (recAudioManager.isBluetoothScoOn()) {
+        if (audioManager.isBluetoothScoOn()) {
             Log.w(TAG, "Disconnect BTSCO Record");
             startBluetoothSCOAudio(false);
         }
         else {
             Log.d(TAG, "BTSCO is not connected");
         }
+        audioManager.setMode(AudioManager.MODE_NORMAL);
         File recordedFile = new File(getFilename());
         if(recordedFile.exists())
         {
@@ -464,8 +460,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
                     mp.release();
-                    playAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-                    if (playAudioManager.isBluetoothScoOn()) {
+                    if (audioManager.isBluetoothScoOn()) {
                         Log.w(TAG, "Stop play Disconnect BTSCO play");
                         startBluetoothSCOAudio(false);
                     } else
@@ -562,8 +557,7 @@ public class MainActivity extends AppCompatActivity {
         audioTrack.stop();
         audioTrack.release();
 
-        playAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        if (playAudioManager.isBluetoothScoOn()) {
+        if (audioManager.isBluetoothScoOn()) {
             startBluetoothSCOAudio(false);
         } // To check if BT Headset is available to connect SCO and record via BT
 
