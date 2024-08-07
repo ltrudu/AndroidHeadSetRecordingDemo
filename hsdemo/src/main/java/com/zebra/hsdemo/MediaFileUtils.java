@@ -115,4 +115,43 @@ public class MediaFileUtils {
         }
         return buffer;
     }
+
+    public static byte[] normalizeAndAdjustPcmGain(byte[] pcmData, float targetDb) {
+        // Step 1: Find the maximum amplitude in the PCM data
+        float maxAmplitude = 0;
+        for (int i = 0; i < pcmData.length; i += 2) {
+            short sample = (short) ((pcmData[i] & 0xFF) | (pcmData[i + 1] << 8));
+            maxAmplitude = Math.max(maxAmplitude, Math.abs(sample));
+        }
+
+        // Step 2: Calculate the normalization factor
+        float normalizationFactor = 32767 / maxAmplitude;
+
+        // Step 3: Normalize the PCM data
+        for (int i = 0; i < pcmData.length; i += 2) {
+            short sample = (short) ((pcmData[i] & 0xFF) | (pcmData[i + 1] << 8));
+            sample = (short) (sample * normalizationFactor);
+            pcmData[i] = (byte) (sample & 0xFF);
+            pcmData[i + 1] = (byte) ((sample >> 8) & 0xFF);
+        }
+
+        // Step 4: Calculate current dB level after normalization
+        float currentDb = 20 * (float) Math.log10(maxAmplitude / 32767);
+
+        // Step 5: Calculate gain factor to reach target dB
+        float gainFactor = (float) Math.pow(10, (targetDb - currentDb) / 20);
+
+        // Step 6: Apply gain factor and clip
+        for (int i = 0; i < pcmData.length; i += 2) {
+            short sample = (short) ((pcmData[i] & 0xFF) | (pcmData[i + 1] << 8));
+            sample = (short) (sample * gainFactor);
+            if (sample > 32767) sample = 32767;
+            if (sample < -32768) sample = -32768;
+            pcmData[i] = (byte) (sample & 0xFF);
+            pcmData[i + 1] = (byte) ((sample >> 8) & 0xFF);
+        }
+        return pcmData;
+    }
+
+
 }

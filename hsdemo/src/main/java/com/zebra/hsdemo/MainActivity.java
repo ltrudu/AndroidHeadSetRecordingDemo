@@ -390,17 +390,6 @@ public class MainActivity extends AppCompatActivity {
         return myCacheFile.getPath();
     }
 
-    public byte[] applyGain(byte[] buffer, int read, float gain) {
-        for (int i = 0; i < read; i += 2) {
-            short sample = (short) ((buffer[i] & 0xFF) | (buffer[i + 1] << 8));
-            sample = (short) Math.min(Math.max(sample * gain, Short.MIN_VALUE), Short.MAX_VALUE);
-            buffer[i] = (byte) (sample & 0xFF);
-            buffer[i + 1] = (byte) ((sample >> 8) & 0xFF);
-        }
-        return buffer;
-    }
-
-
     private void writeAudioDataToFile() {
         byte[] audioData = new byte[bufSize];
         String filePath = getFilename();
@@ -414,7 +403,7 @@ public class MainActivity extends AppCompatActivity {
 
         while (isRecording) {
             int read = recorder.read(audioData, 0, bufSize);
-            audioData = applyGain(audioData, read, recordingGain);
+            audioData = MediaFileUtils.applyGain(audioData, read, recordingGain);
             if (AudioRecord.ERROR_INVALID_OPERATION != read) {
                 try {
                     os.write(audioData);
