@@ -130,7 +130,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Play with Mediaplayer" />
+                android:text="Play with Mediaplayer (Recommended)" />
         </LinearLayout>
 
         <LinearLayout

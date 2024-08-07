@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     int bufSize = 0;
     boolean isRecording = false;
     float recordingGain = 1.0f;
-    float replayGain = 10.0f;
+    float replayGain = 1.0f;
 
     final static int[] sampleRatevalues = {8000, 12000, 16000, 22000, 32000, 44000};
     public static int sampleRate = sampleRatevalues[0];
