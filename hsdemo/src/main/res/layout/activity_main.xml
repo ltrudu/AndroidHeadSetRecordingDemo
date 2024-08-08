@@ -130,7 +130,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Play with Mediaplayer (Recommended)" />
+                android:text="Mediaplayer (Recommended)" />
         </LinearLayout>
 
         <LinearLayout
@@ -139,12 +139,25 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/btPlayWithAT"
+                android:id="@+id/btPlayWithATLE"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Play with AudioTrack" />
+                android:text="AudioTrack Loudness Enhancer" />
         </LinearLayout>
+
+        <!--LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btPlayWithATMG"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="AudioTrack Manual Gain" />
+        </LinearLayout-->
 
         <TextView
             android:id="@+id/textView6"
@@ -166,7 +179,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:max="350"
+                android:max="150"
                 android:min="10"
                 android:progress="3" />
 

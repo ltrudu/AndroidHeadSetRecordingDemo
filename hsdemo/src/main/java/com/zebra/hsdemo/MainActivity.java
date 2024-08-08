@@ -40,44 +40,6 @@ import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/**
- * Copilot answer when it comes to choose between AudioTrack and Mediaplayer
- * In this use case it is strongly recommended to use Mediaplayer
- *
- *
- * The `AudioTrack` and `MediaPlayer` classes in Android Studio serve different purposes and have distinct technical differences:
- *
- * ### **AudioTrack**
- * - **Low-Level API**: `AudioTrack` is a low-level audio API that provides more control over audio playback. It allows you to directly manage audio buffers and playback parameters.
- * - **Use Cases**: Ideal for applications that require precise control over audio playback, such as custom audio processing, real-time audio synthesis, or playing raw PCM data.
- * - **Volume Control**: Volume control in `AudioTrack` can be more complex. You might need to manually adjust the audio data or use additional classes like `LoudnessEnhancer` to manage volume gain⁴⁵. This can sometimes lead to issues with distortion or ineffective volume changes if not handled correctly.
- *
- * ### **MediaPlayer**
- * - **High-Level API**: `MediaPlayer` is a higher-level API designed for easy playback of audio and video files. It handles many aspects of media playback internally, including buffering, decoding, and rendering.
- * - **Use Cases**: Suitable for applications that need to play audio or video files from various sources (local or streaming), such as music players or video players.
- * - **Volume Control**: `MediaPlayer` provides straightforward volume control through methods like `setVolume()`, which generally works more reliably for typical use cases⁶.
- *
- * ### **Volume Gain Issues with AudioTrack**
- * The issues you're experiencing with volume gain in `AudioTrack` could be due to several factors:
- * - **Manual Gain Adjustment**: Unlike `MediaPlayer`, `AudioTrack` requires manual adjustment of the audio data to change the volume. This can involve multiplying the audio samples by a gain factor, which can lead to distortion if not done carefully⁴.
- * - **LoudnessEnhancer**: Using the `LoudnessEnhancer` class can help, but it might not always produce the desired effect, especially if the audio data is not properly normalized or if the gain settings are too aggressive⁴.
- *
- * If you need precise control over audio playback and are comfortable with handling low-level audio data, `AudioTrack` is a powerful tool. However, for most standard audio playback needs, `MediaPlayer` is simpler and more reliable.
- *
- * Do you have a specific scenario or issue you're trying to solve with these classes? Maybe I can help with more targeted advice!
- *
- * Source : conversation avec Copilot, 8/7/2024
- * (1) android - How to increase amplify AudioTrack? - Stack Overflow. https://stackoverflow.com/questions/43153158/how-to-increase-amplify-audiotrack.
- * (2) How can I manually change the gain level of an Android AudioTrack .... https://stackoverflow.com/questions/22844695/how-can-i-manually-change-the-gain-level-of-an-android-audiotrack-stream-using-a.
- * (3) Can I adjust an audio file volume in android studio. https://stackoverflow.com/questions/68202996/can-i-adjust-an-audio-file-volume-in-android-studio.
- * (4) AudioTrack, SoundPool or MediaPlayer, which should I use?. https://stackoverflow.com/questions/13527134/audiotrack-soundpool-or-mediaplayer-which-should-i-use.
- * (5) AudioTrack | Android Developers. https://developer.android.com/reference/android/media/AudioTrack.
- * (6) media player - Android AudioRecord and MediaRecorder - Stack Overflow. https://stackoverflow.com/questions/12780677/android-audiorecord-and-mediarecorder.
- * (7) How to get volume of AudioTrack in Android? - Stack Overflow. https://stackoverflow.com/questions/16484382/how-to-get-volume-of-audiotrack-in-android.
- * (8) undefined. https://en.proft.me/2018/05/8/how-play-audio-file-android/.
- *
- */
-
 public class MainActivity extends AppCompatActivity {
 
     private final String TAG = "hsdemo";
@@ -209,6 +171,7 @@ public class MainActivity extends AppCompatActivity {
 
         bluetoothAdapter.getProfileProxy(this, mProfileListener, BluetoothProfile.HEADSET);
 
+
         findViewById(R.id.btStartRecording).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -228,13 +191,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.btPlayWithAT).setOnClickListener(new View.OnClickListener()
+        findViewById(R.id.btPlayWithATLE).setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View view) {
-                playPcmFileWithAudioTrack();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Your code here
+                        playPcmFileWithAudioTrack(false);
+                    }
+                }).start();
+
             }
         });
+
+
+        /*findViewById(R.id.btPlayWithATMG).setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view) {
+                playPcmFileWithAudioTrack(true);
+            }
+        });
+        */
         setButtonVisibility(true);
 
         TextView tvRecordingGain = findViewById(R.id.tvRecordingGain);
@@ -483,6 +463,11 @@ public class MainActivity extends AppCompatActivity {
                 mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                     @Override
                     public void onPrepared(MediaPlayer mediaPlayer) {
+                        // Step 3: Create and configure LoudnessEnhancer
+                        int audioSessionId = mediaPlayer.getAudioSessionId();
+                        LoudnessEnhancer loudnessEnhancer = new LoudnessEnhancer(audioSessionId);
+                        loudnessEnhancer.setTargetGain((int)(replayGain * 1000.0f)); // Set the target gain in millibels
+                        loudnessEnhancer.setEnabled(true);
                         mediaPlayer.start();
                     }
                 });
@@ -531,17 +516,36 @@ public class MainActivity extends AppCompatActivity {
         return retVal;
     }
 
+    private void setCommunicationDevice(int deviceType)
+    {
+        List<AudioDeviceInfo> devices = audioManager.getAvailableCommunicationDevices();
+
+        AudioDeviceInfo deviceInfo = null;
+
+        for (AudioDeviceInfo device : devices) {
+                if (device.getType() == deviceType) {
+                    deviceInfo = device;
+                    break;
+                }
+            }
+
+        if(deviceInfo != null)
+            audioManager.setCommunicationDevice(deviceInfo);
+    }
+
     private void routeAudioToHeadset() {
         if (isHeadsetConnected()) {
             audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
             audioManager.setSpeakerphoneOn(false);
+            setCommunicationDevice(AudioDeviceInfo.TYPE_BLUETOOTH_SCO);
         } else {
             audioManager.setMode(AudioManager.MODE_NORMAL);
             audioManager.setSpeakerphoneOn(true);
+            setCommunicationDevice(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER);
         }
     }
 
-    private void playPcmFileWithAudioTrack() {
+    private void playPcmFileWithAudioTrack(boolean manualGain) {
         byte[] audioData = null;
         File fileToPlay = new File(getFilename());
         if(fileToPlay.exists())
@@ -590,15 +594,18 @@ public class MainActivity extends AppCompatActivity {
         );
 
         // We'll use the loudness enhancer to change gain
-        //audioData = applyGain(audioData, audioData.length, replayGain);
+        if(manualGain)
+            audioData = MediaFileUtils.applyGain(audioData, audioData.length, replayGain);
+        else
+        {
+            // Setup LoudnessEnhancer
+            int audioSessionId = audioTrack.getAudioSessionId();
 
-        // Setup LoudnessEnhancer
-        int audioSessionId = audioTrack.getAudioSessionId();
-
-        // Create and configure LoudnessEnhancer
-        LoudnessEnhancer loudnessEnhancer = new LoudnessEnhancer(audioSessionId);
-        loudnessEnhancer.setTargetGain((int)replayGain * 1000); // Set the target gain in millibels
-        loudnessEnhancer.setEnabled(true);
+            // Create and configure LoudnessEnhancer
+            LoudnessEnhancer loudnessEnhancer = new LoudnessEnhancer(audioSessionId);
+            loudnessEnhancer.setTargetGain((int)(replayGain * 1000.0f)); // Set the target gain in millibels
+            loudnessEnhancer.setEnabled(true);
+        }
 
         // Set audiotrack volume to max
         audioTrack.setVolume(1.0f);
