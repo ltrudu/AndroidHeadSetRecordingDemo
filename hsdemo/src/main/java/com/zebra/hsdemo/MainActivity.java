@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
@@ -19,7 +20,10 @@ import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.media.audiofx.LoudnessEnhancer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.CompoundButton;
@@ -27,6 +31,7 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.Manifest;
 
 import com.zebra.criticalpermissionshelper.CriticalPermissionsHelper;
 import com.zebra.criticalpermissionshelper.EPermissionType;
@@ -36,13 +41,48 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import static android.os.Environment.*;
 
 public class MainActivity extends AppCompatActivity {
 
     private final String TAG = "hsdemo";
+    private static final int REQUEST_CODE = 18151;
+    private ActivityResultLauncher<Intent> manageExternalStorageLauncher = registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+        result -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Environment.isExternalStorageManager()) {
+                    // Permission granted
+                    requestBluetoothPermission();
+                } else {
+                    Toast.makeText(this, "Accept manage all file permission please", Toast.LENGTH_LONG).show();
+                    requestManageAllFilePermission();
+                }
+            }
+        }
+    );
+
+    private ActivityResultLauncher<String> requestBluetoothConnectPermissionLauncher  = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    checkAndRequestPermissions();
+                } else {
+                    Toast.makeText(this, "Accept bluetooth permission please", Toast.LENGTH_LONG).show();
+                    requestBluetoothPermission();
+                }
+            }
+    );
+
     private AudioManager audioManager;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothHeadset mBluetoothHeadset;
@@ -111,43 +151,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         setButtonVisibility(false);
 
-        CriticalPermissionsHelper.grantPermission(this, EPermissionType.ALL_DANGEROUS_PERMISSIONS, new IResultCallbacks() {
-            @Override
-            public void onSuccess(String message, String resultXML) {
-                Log.d(TAG, EPermissionType.ALL_DANGEROUS_PERMISSIONS.toString() + " granted with success.");
-                CriticalPermissionsHelper.grantPermission(MainActivity.this, EPermissionType.MANAGE_EXTERNAL_STORAGE, new IResultCallbacks() {
-                    @Override
-                    public void onSuccess(String message, String resultXML) {
-                        Log.d(TAG, EPermissionType.MANAGE_EXTERNAL_STORAGE.toString() + " granted with success.");
-                        initHSDemo();
-                    }
-
-                    @Override
-                    public void onError(String message, String resultXML) {
-                        Log.d(TAG, "Error granting " + EPermissionType.MANAGE_EXTERNAL_STORAGE.toString() + " permission.\n" + message);
-                    }
-
-                    @Override
-                    public void onDebugStatus(String message) {
-                        Log.d(TAG, "Debug Grant Permission " + EPermissionType.MANAGE_EXTERNAL_STORAGE.toString() + ": " + message);
-                    }
-                });
-            }
-
-            @Override
-            public void onError(String message, String resultXML) {
-                Log.d(TAG, "Error granting " + EPermissionType.ALL_DANGEROUS_PERMISSIONS.toString() + " permission.\n" + message);
-            }
-
-            @Override
-            public void onDebugStatus(String message) {
-                Log.d(TAG, "Debug Grant Permission " + EPermissionType.ALL_DANGEROUS_PERMISSIONS.toString() + ": " + message);
-            }
-        });
-
+        checkIfZebraDeviceToGrantAllPermissions();
     }
 
-    private void setButtonVisibility(boolean visible)
+     private void setButtonVisibility(boolean visible)
     {
         findViewById(R.id.llGlobal).setVisibility(visible == true ? View.VISIBLE : View.GONE);
         findViewById(R.id.tvMessage).setVisibility(visible == true ? View.GONE : View.VISIBLE);
@@ -187,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btPlayWithMP).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                    playWithMediaPlayer();
+                playWithMediaPlayer();
             }
         });
 
@@ -195,15 +202,14 @@ public class MainActivity extends AppCompatActivity {
         {
             @Override
             public void onClick(View view) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        // Your code here
-                        playPcmFileWithAudioTrack(false);
-                    }
-                }).start();
-
-            }
+                   new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Your code here
+                            playPcmFileWithAudioTrack(false);
+                        }
+                    }).start();
+                }
         });
 
 
@@ -335,7 +341,7 @@ public class MainActivity extends AppCompatActivity {
 
          audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
 
-        bufSize = AudioRecord.getMinBufferSize(sampleRate, channelInConfig, audioFormat);
+        bufSize = AudioRecord.getMinBufferSize(sampleRate, channelInConfig, audioFormat)*10;
         try {
             recorder = new AudioRecord( MediaRecorder.AudioSource.MIC ,
                     sampleRate, channelInConfig, audioFormat, bufSize);
@@ -366,7 +372,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String getFilename()
     {
-        File myCacheFile = new File(getCacheDir(), "hsdemo_audio.pcm");
+        File myCacheFile = new File(getExternalStorageDirectory(), "hsdemo_audio.pcm");
         return myCacheFile.getPath();
     }
 
@@ -383,9 +389,9 @@ public class MainActivity extends AppCompatActivity {
 
         while (isRecording) {
             int read = recorder.read(audioData, 0, bufSize);
-            audioData = MediaFileUtils.applyGain(audioData, read, recordingGain);
             if (AudioRecord.ERROR_INVALID_OPERATION != read) {
                 try {
+                    audioData = MediaFileUtils.applyGain(audioData, read, recordingGain);
                     os.write(audioData);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -432,9 +438,10 @@ public class MainActivity extends AppCompatActivity {
         {
             if (isHeadsetConnected()) {
                 startBluetoothSCOAudio(true);
+                routeAudioToHeadset(true);
             }
 
-            routeAudioToHeadset();
+
 
             int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume,0);
@@ -476,6 +483,7 @@ public class MainActivity extends AppCompatActivity {
                 mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
+                        mp.stop();
                         mp.release();
                         if (audioManager.isBluetoothScoOn()) {
                             Log.w(TAG, "Stop play Disconnect BTSCO play");
@@ -533,8 +541,8 @@ public class MainActivity extends AppCompatActivity {
             audioManager.setCommunicationDevice(deviceInfo);
     }
 
-    private void routeAudioToHeadset() {
-        if (isHeadsetConnected()) {
+    private void routeAudioToHeadset(boolean headset) {
+        if (isHeadsetConnected() && headset) {
             audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
             audioManager.setSpeakerphoneOn(false);
             setCommunicationDevice(AudioDeviceInfo.TYPE_BLUETOOTH_SCO);
@@ -545,6 +553,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /*
+        TODO: find why sometimes the
+    */
     private void playPcmFileWithAudioTrack(boolean manualGain) {
         byte[] audioData = null;
         File fileToPlay = new File(getFilename());
@@ -569,9 +580,10 @@ public class MainActivity extends AppCompatActivity {
 
         if (isHeadsetConnected()) {
             startBluetoothSCOAudio(true);
+            routeAudioToHeadset(true);
         }
 
-        routeAudioToHeadset();
+
 
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -619,8 +631,142 @@ public class MainActivity extends AppCompatActivity {
         if (audioManager.isBluetoothScoOn()) {
             startBluetoothSCOAudio(false);
         } // To check if BT Headset is available to connect SCO and record via BT
+    }
+
+    private void checkIfZebraDeviceToGrantAllPermissions()
+    {
+        if(Build.MANUFACTURER.toLowerCase().contains("zebra")) {
+            CriticalPermissionsHelper.grantPermission(this, EPermissionType.ALL_DANGEROUS_PERMISSIONS, new IResultCallbacks() {
+                @Override
+                public void onSuccess(String message, String resultXML) {
+                    Log.d(TAG, EPermissionType.ALL_DANGEROUS_PERMISSIONS.toString() + " granted with success.");
+                    CriticalPermissionsHelper.grantPermission(MainActivity.this, EPermissionType.MANAGE_EXTERNAL_STORAGE, new IResultCallbacks() {
+                        @Override
+                        public void onSuccess(String message, String resultXML) {
+                            Log.d(TAG, EPermissionType.MANAGE_EXTERNAL_STORAGE.toString() + " granted with success.");
+                            initHSDemo();
+                        }
+
+                        @Override
+                        public void onError(String message, String resultXML) {
+                            Log.d(TAG, "Error granting " + EPermissionType.MANAGE_EXTERNAL_STORAGE.toString() + " permission.\n" + message);
+                            checkAndRequestPermissions();
+                        }
+
+                        @Override
+                        public void onDebugStatus(String message) {
+                            Log.d(TAG, "Debug Grant Permission " + EPermissionType.MANAGE_EXTERNAL_STORAGE.toString() + ": " + message);
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(String message, String resultXML) {
+                    Log.d(TAG, "Error granting " + EPermissionType.ALL_DANGEROUS_PERMISSIONS.toString() + " permission.\n" + message);
+                    checkAndRequestPermissions();
+                }
+
+                @Override
+                public void onDebugStatus(String message) {
+                    Log.d(TAG, "Debug Grant Permission " + EPermissionType.ALL_DANGEROUS_PERMISSIONS.toString() + ": " + message);
+                }
+            });
+        }
+        else
+        {
+            requestManageAllFilePermission();
+        }
 
     }
 
+    private void requestManageAllFilePermission()
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                Uri uri = Uri.parse("package:" + getPackageName());
+                intent.setData(uri);
+                manageExternalStorageLauncher.launch(intent);
+            }
+            else
+            {
+                requestBluetoothPermission();
+            }
+        }
+        else
+        {
+            Log.e(TAG, "This application runs only on device >= A11");
+            Toast.makeText(this, "This application runs only on device >= A11", Toast.LENGTH_LONG).show();
+            finish();
+        }
 
+    }
+
+    private void requestBluetoothPermission()
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                requestBluetoothConnectPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT);
+            }
+            else
+            {
+                checkAndRequestPermissions();
+            }
+        }
+        else
+        {
+            checkAndRequestPermissions();
+        }
+    }
+
+    private void checkAndRequestPermissions() {
+        String[] permissions = {
+                Manifest.permission.MODIFY_AUDIO_SETTINGS,
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.RECORD_AUDIO,
+        };
+
+        List<String> listPermissionsNeeded = new ArrayList<>();
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                listPermissionsNeeded.add(permission);
+            }
+        }
+
+        if (!listPermissionsNeeded.isEmpty()) {
+            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[0]), REQUEST_CODE);
+        }
+        else
+        {
+            initHSDemo();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE) {
+            boolean allgranted = true;
+            for (int i = 0; i < permissions.length; i++) {
+                if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission granted
+                    allgranted = allgranted && true;
+                } else {
+                    // Permission denied
+                    allgranted = allgranted && false;
+                }
+            }
+            if(allgranted == false)
+            {
+                Toast.makeText(this, "Please accept permissions", Toast.LENGTH_LONG).show();
+                checkAndRequestPermissions();
+            }
+            else
+            {
+                initHSDemo();
+            }
+        }
+    }
 }
