@@ -145,6 +145,42 @@ public class EMDKUtils {
         mContext = context;
     }
 
+    public void createAudioVolUIProfileToMAXIMUM(String audioProfileName, IResultCallbacks resultCallbacks)
+    {
+        mIResultCallbacks = resultCallbacks;
+        msProfileName = "AudioVolumeMgr-0";
+        msProfileData = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                "<characteristic type=\"Profile\">\n" +
+                "<parm name=\"ProfileName\" value=\"" + msProfileName + "\"/>\n" +
+                "  <characteristic version=\"11.6\" type=\"AudioVolUIMgr\">\n" +
+                "    <parm name=\"MuteVibrateState\" value=\"3\" />\n" +
+                "    <parm name=\"CurrentProfileAction\" value=\"1\" />\n" +
+                "    <characteristic type=\"CurrentUIProfile\">\n" +
+                "      <parm name=\"CurrentProfileName\" value=\"MAXIMUM\" />\n" +
+                "      <parm name=\"SetCurrentProfileOption\" value=\"2\" />\n" +
+                "    </characteristic>\n" +
+                "    <parm name=\"UIProfileAction\" value=\"1\" />\n" +
+                "    <characteristic type=\"UIProfile\">\n" +
+                "      <parm name=\"ProfileName\" value=\"MAXIMUM\" />\n" +
+                "      <characteristic type=\"UIProfile-streamconfig\">\n" +
+                "        <parm name=\"STREAM_MUSIC_SPK_LEVEL\" value=\"15,15,15\" />\n" +
+                "        <parm name=\"STREAM_MUSIC_WHS_LEVEL\" value=\"15,15,15\" />\n" +
+                "        <parm name=\"STREAM_MUSIC_BTHS_LEVEL\" value=\"10,15,15\" />\n" +
+                "        <parm name=\"STREAM_MUSIC_HDMI_LEVEL\" value=\"15,15,15\" />\n" +
+                "        <parm name=\"STREAM_RING_SPK_LEVEL\" value=\"7,7,7\" />\n" +
+                "        <parm name=\"STREAM_ALARM_SPK_LEVEL\" value=\"7,7,7\" />\n" +
+                "        <parm name=\"STREAM_VOICECALL_SPK_LEVEL\" value=\"5,5,5\" />\n" +
+                "        <parm name=\"STREAM_VOICECALL_RCVR_LEVEL\" value=\"5,5,5\" />\n" +
+                "        <parm name=\"STREAM_VOICECALL_WHS_LEVEL\" value=\"5,5,5\" />\n" +
+                "        <parm name=\"STREAM_VOICECALL_BTHS_LEVEL\" value=\"15,15,15\" />\n" +
+                "        <parm name=\"STREAM_VVS_SPK_LEVEL\" value=\"10,10,10\" />\n" +
+                "      </characteristic>\n" +
+                "    </characteristic>\n" +
+                "  </characteristic>\n" +
+                "</characteristic>\n";
+        processProfile();
+    }
+
     public void activateVolumeProfile(String audioProfileName, IResultCallbacks resultCallbacks)
     {
         mIResultCallbacks = resultCallbacks;
@@ -163,10 +199,26 @@ public class EMDKUtils {
                 "</characteristic>\n";
 
         // initialize profile manager processing
-        initializeEMDK();
+        processProfile();
     }
 
-    private void initializeEMDK()
+    public void adjustVolumeToCurrentPreset( IResultCallbacks resultCallbacks)
+    {
+        mIResultCallbacks = resultCallbacks;
+        // Create profile content
+        msProfileName = "AudioVolumeMgr-2";
+        msProfileData = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                "<characteristic type=\"Profile\">\n" +
+                "<parm name=\"ProfileName\" value=\"" + msProfileName + "\"/>\n" +
+                "  <characteristic version=\"11.6\" type=\"AudioVolUIMgr\">\n" +
+                "    <parm name=\"CurrentProfileAction\" value=\"2\" />\n" +
+                "  </characteristic>" +
+                "</characteristic>\n";
+        // initialize profile manager processing
+        processProfile();
+    }
+
+    private void processProfile()
     {
         if(mEMDKManager == null)
         {

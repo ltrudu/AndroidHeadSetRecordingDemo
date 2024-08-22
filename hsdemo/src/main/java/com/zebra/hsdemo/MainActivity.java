@@ -227,10 +227,24 @@ public class MainActivity extends AppCompatActivity {
                 }
         });
 
+        findViewById(R.id.btCreateVolumeProfile).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                createMaximumAudioProfile();
+            }
+        });
+
         findViewById(R.id.btActivateVolumeProfile).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 activateMaximumAudioProfile();
+            }
+        });
+
+        findViewById(R.id.btAdjustVolumeToPreset).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                adjustVolumeToCurrentPreset();
             }
         });
 
@@ -855,7 +869,65 @@ public class MainActivity extends AppCompatActivity {
         }
         else
         {
-            Toast.makeText(MainActivity.this, "Activate MAXIMUM audio profile/n is already running", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Please wait.\nProfileManager is already running.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void createMaximumAudioProfile()
+    {
+        if(emdkUtils == null) {
+            emdkUtils = new EMDKUtils(this);
+            emdkUtils.createAudioVolUIProfileToMAXIMUM("MAXIMUM", new EMDKUtils.IResultCallbacks() {
+                @Override
+                public void onSuccess(String message, String resultXML) {
+                    Toast.makeText(MainActivity.this, "Profile created with success", Toast.LENGTH_LONG).show();
+                    emdkUtils = null;
+                }
+
+                @Override
+                public void onError(String message, String resultXML) {
+                    Toast.makeText(MainActivity.this, "Error creating profile.\nCheck logcat.", Toast.LENGTH_LONG).show();
+                    emdkUtils = null;
+                }
+
+                @Override
+                public void onDebugStatus(String message) {
+
+                }
+            });
+        }
+        else
+        {
+            Toast.makeText(MainActivity.this, "Please wait.\nProfileManager is already running.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void adjustVolumeToCurrentPreset()
+    {
+        if(emdkUtils == null) {
+            emdkUtils = new EMDKUtils(this);
+            emdkUtils.adjustVolumeToCurrentPreset(new EMDKUtils.IResultCallbacks() {
+                @Override
+                public void onSuccess(String message, String resultXML) {
+                    Toast.makeText(MainActivity.this, "Volume adjusted with success", Toast.LENGTH_LONG).show();
+                    emdkUtils = null;
+                }
+
+                @Override
+                public void onError(String message, String resultXML) {
+                    Toast.makeText(MainActivity.this, "Error adjusting volume.\nCheck logcat.", Toast.LENGTH_LONG).show();
+                    emdkUtils = null;
+                }
+
+                @Override
+                public void onDebugStatus(String message) {
+
+                }
+            });
+        }
+        else
+        {
+            Toast.makeText(MainActivity.this, "Please wait.\nProfileManager is already running.", Toast.LENGTH_SHORT).show();
         }
     }
 }
