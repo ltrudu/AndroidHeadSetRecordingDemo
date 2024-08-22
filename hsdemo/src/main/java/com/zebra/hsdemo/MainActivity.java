@@ -89,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
     private List<BluetoothDevice> devices;
     private boolean targetBt = false;
 
+    private EMDKUtils emdkUtils = null;
 
     AudioRecord recorder = null;
     Thread recordingThread = null;
@@ -191,10 +192,24 @@ public class MainActivity extends AppCompatActivity {
                 stopRecording();
             }
         });
+
+        findViewById(R.id.btPlayWithMPOld).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                playWithMediaPlayerOld();
+            }
+        });
+
         findViewById(R.id.btPlayWithMP).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                playWithMediaPlayer();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Your code here
+                        playWithMediaPlayer();
+                    }
+                }).start();
             }
         });
 
@@ -212,15 +227,13 @@ public class MainActivity extends AppCompatActivity {
                 }
         });
 
-
-        /*findViewById(R.id.btPlayWithATMG).setOnClickListener(new View.OnClickListener()
-        {
+        findViewById(R.id.btActivateVolumeProfile).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                playPcmFileWithAudioTrack(true);
+                activateMaximumAudioProfile();
             }
         });
-        */
+
         setButtonVisibility(true);
 
         TextView tvRecordingGain = findViewById(R.id.tvRecordingGain);
@@ -341,7 +354,7 @@ public class MainActivity extends AppCompatActivity {
 
          audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
 
-        bufSize = AudioRecord.getMinBufferSize(sampleRate, channelInConfig, audioFormat)*10;
+        bufSize = AudioRecord.getMinBufferSize(sampleRate, channelInConfig, audioFormat);
         try {
             recorder = new AudioRecord( MediaRecorder.AudioSource.MIC ,
                     sampleRate, channelInConfig, audioFormat, bufSize);
@@ -508,6 +521,54 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void playWithMediaPlayerOld()
+    {
+        File recordedFile = new File(getFilename());
+        if(recordedFile.exists())
+        {
+            if (isHeadsetConnected()) {
+                startBluetoothSCOAudio(true);
+            }
+
+            Uri fileAsUri = null;
+            try {
+                fileAsUri = MediaFileUtils.encodePCMtoWavThenTransferFileToMediaStore(this, recordedFile, sampleRate, channelNumber, bitDepth, replayGain);
+            } catch (IOException e) {
+                Log.e(TAG, "Exception: " + e);
+                e.printStackTrace();
+                return;
+            }
+
+            MediaPlayer mediaPlayer = new MediaPlayer();
+
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    mp.stop();
+                    mp.release();
+                    if (audioManager.isBluetoothScoOn()) {
+                        Log.w(TAG, "Stop play Disconnect BTSCO play");
+                        startBluetoothSCOAudio(false);
+                    } else
+                        Log.w(TAG, "play BTSCO is not connected");
+
+                }
+            });
+            try {
+                mediaPlayer.setDataSource(this, fileAsUri);
+                mediaPlayer.setAudioStreamType(AudioManager.STREAM_VOICE_CALL);
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else
+        {
+            Toast.makeText(this, "No recorded data found.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private boolean isHeadsetConnected() {
         boolean hasConnectedDevice = false;
         AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
@@ -583,8 +644,6 @@ public class MainActivity extends AppCompatActivity {
             routeAudioToHeadset(true);
         }
 
-
-
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -635,7 +694,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkIfZebraDeviceToGrantAllPermissions()
     {
-        if(Build.MANUFACTURER.toLowerCase().contains("zebra")) {
+        if(Build.MANUFACTURER.toLowerCase().contains("zebra") && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             CriticalPermissionsHelper.grantPermission(this, EPermissionType.ALL_DANGEROUS_PERMISSIONS, new IResultCallbacks() {
                 @Override
                 public void onSuccess(String message, String resultXML) {
@@ -720,7 +779,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkAndRequestPermissions() {
-        String[] permissions = {
+
+        String[] permissions = new String[]{
                 Manifest.permission.MODIFY_AUDIO_SETTINGS,
                 Manifest.permission.BLUETOOTH,
                 Manifest.permission.BLUETOOTH_CONNECT,
@@ -760,13 +820,42 @@ public class MainActivity extends AppCompatActivity {
             }
             if(allgranted == false)
             {
-                Toast.makeText(this, "Please accept permissions", Toast.LENGTH_LONG).show();
-                checkAndRequestPermissions();
+                Toast.makeText(this, "Please accept all permissions", Toast.LENGTH_LONG).show();
+                checkIfZebraDeviceToGrantAllPermissions();
             }
             else
             {
                 initHSDemo();
             }
+        }
+    }
+
+    private void activateMaximumAudioProfile()
+    {
+        if(emdkUtils == null) {
+            emdkUtils = new EMDKUtils(this);
+            emdkUtils.activateVolumeProfile("MAXIMUM", new EMDKUtils.IResultCallbacks() {
+                @Override
+                public void onSuccess(String message, String resultXML) {
+                    Toast.makeText(MainActivity.this, "Profile applied with success", Toast.LENGTH_LONG).show();
+                    emdkUtils = null;
+                }
+
+                @Override
+                public void onError(String message, String resultXML) {
+                    Toast.makeText(MainActivity.this, "Error applying profile.\nCheck logcat.", Toast.LENGTH_LONG).show();
+                    emdkUtils = null;
+                }
+
+                @Override
+                public void onDebugStatus(String message) {
+
+                }
+            });
+        }
+        else
+        {
+            Toast.makeText(MainActivity.this, "Activate MAXIMUM audio profile/n is already running", Toast.LENGTH_SHORT).show();
         }
     }
 }

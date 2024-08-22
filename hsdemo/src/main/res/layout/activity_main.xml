@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -7,10 +7,14 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
     <LinearLayout
         android:id="@+id/llGlobal"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
 
         <TextView
@@ -120,6 +124,20 @@
             android:layout_marginBottom="10dp"
             android:gravity="center_horizontal"
             android:text="Replay" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btPlayWithMPOld"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mediaplayer Old API (Not Recommended)" />
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -145,19 +163,6 @@
                 android:layout_weight="1"
                 android:text="AudioTrack Loudness Enhancer (Not Recommended)" />
         </LinearLayout>
-
-        <!--LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btPlayWithATMG"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="AudioTrack Manual Gain" />
-        </LinearLayout-->
 
         <TextView
             android:id="@+id/textView6"
@@ -192,21 +197,25 @@
                 android:text="TextView" />
         </LinearLayout>
 
-
-
-
-
-
-
-
-
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="20dp"
             android:layout_marginBottom="20dp"
             android:background="@android:color/darker_gray" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btActivateVolumeProfile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Activate audio profile MAXIMUM" />
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -219,4 +228,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/llGlobal" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+    </RelativeLayout>
+
+</ScrollView>
